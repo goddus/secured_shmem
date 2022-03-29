@@ -83,5 +83,14 @@ void close_shared_mem(void* addr, size_t shm_size){
     
     //update the linked list data structure
 
+}
 
+void delete_shared_mem(const char *name){
+
+    //TODO: verify that this is the last user of the shm region
+
+    //shm_unlink() the shm region
+    shm_unlink(name);
+
+    //TODO: update the data structure
 }

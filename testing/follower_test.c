@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/mman.h> 	   	 /* For shm_open()*/
 #include <sys/stat.h>        /* For mode constants */
-#include "../secured_shmem/secure_shmem.h"
+#include "../secure_shmem.h"
 #include <fcntl.h>           /* For O_* constants */
 #include <time.h> 	/* For time() */
 
@@ -20,20 +20,7 @@ int main(){
 	time_t time_seconds;
 	long time_nseconds;
 
-    /*//create shared memory
-	fd = shm_open(shared_mem_name, O_RDWR, S_IRWXU);
-	if(fd == -1){
-		printf("ERROR: failed to create shared memory region.\n");
-		return 1;
-	}
-
-	//map to address space
-	shmem = (struct shared_data*) mmap(NULL, sizeof(struct shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if(shmem == MAP_FAILED){
-		printf("ERROR: failed to map to address space.\n");
-		return 1;
-	}*/
-
+   
     shmem = (struct shared_data *) open_shared_mem(shared_mem_name, JOIN_REGION, BOTH, sizeof(struct shared_data));
 	
 	clock_gettime(CLOCK_REALTIME, &start);

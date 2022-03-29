@@ -1,5 +1,5 @@
 #include "shared_mem.h"
-#include "../secured_shmem/secure_shmem.h"
+#include "../secure_shmem.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -47,10 +47,7 @@ int main(){
     close_shared_mem(shmem, sizeof(struct shared_data));
 
 	//unlink
-	if(shm_unlink(shared_mem_name) != 0){
-        printf("Error with unlink(): %s\n", strerror(errno));
-		return 1;
-	}	
+    delete_shared_mem(shared_mem_name);	
 
 	return 0;	
 
