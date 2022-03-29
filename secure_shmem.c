@@ -1,7 +1,7 @@
-
+#include "secure_shmem.h"
 
 //TODO: figure out how to properly use a mode_t data type
-int assemble_mode (enum access){
+int assemble_mode (enum access_options access){
 
     int mem_region_mode;
 
@@ -21,14 +21,14 @@ int assemble_mode (enum access){
 }
 
 
-void *open_shared_mem (const char *name, enum create_or_join, enum access, off_t size){
+void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size){
 
     //shm_open()
     int access_level = assemble_mode(access);
     int shm_fd;
 
     //if user is creating region
-    if (create_or_join == CREATE_REGION){
+    if (action == CREATE_REGION){
 
         //create region
         shm_fd = shm_open(name, access_level | O_CREAT, S_IRWXU);
@@ -46,7 +46,7 @@ void *open_shared_mem (const char *name, enum create_or_join, enum access, off_t
     }
 
     //if user is joining region
-    else if (create_or_join == JOIN_REGION){
+    else if (action == JOIN_REGION){
 
         //open region
         shm_fd = shm_open(name, access_level, S_IRWXU);
@@ -62,7 +62,7 @@ void *open_shared_mem (const char *name, enum create_or_join, enum access, off_t
 
     //map region to address space
     void* shm_addr = mmap(NULL, size, PROT_READ|PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if(shm_addr == -1){
+    if(shm_addr == (void*)-1){
         printf("error mapping to address space\n");
         return NULL;
     }
@@ -71,4 +71,17 @@ void *open_shared_mem (const char *name, enum create_or_join, enum access, off_t
 
     return shm_addr;
     
+}
+
+
+void close_shared_mem(void* addr, size_t shm_size){
+
+    //munmap()
+    munmap(addr, shm_size);
+
+    //close() the file descriptor
+    
+    //update the linked list data structure
+
+
 }

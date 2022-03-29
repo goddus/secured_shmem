@@ -4,6 +4,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <stdio.h>
 
 
 enum create_or_join 
@@ -19,5 +20,7 @@ enum access_options
     BOTH
 };
 
-int open_shared_mem (const char *name, enum create_or_join, enum access, off_t size);
+void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size);
+
+void close_shared_mem(void* addr, size_t shm_size);
 
