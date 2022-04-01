@@ -1,4 +1,6 @@
 #include "secure_shmem.h"
+#include "linked_list/mem_region_list.h"
+
 
 //TODO: figure out how to properly use a mode_t data type
 int assemble_mode (enum access_options access){
