@@ -112,7 +112,7 @@ int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
 
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
     printf("in write_shm(), before lock()\n");
-    lock();
+    lock(access_num);
     printf("in write_shm(), after lock()\n");
     memcpy(dest, src, num_bytes);
     printf("in write_shm(), before unlock()\n");
@@ -121,7 +121,7 @@ int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
     return 0;
 }
 
-void lock()
+void lock(int access_num)
 {
     int expected = UNLOCKED;
     int desired = LOCKED;

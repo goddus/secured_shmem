@@ -32,13 +32,10 @@ struct mem_region
     //char* name;
     int fd;
     void* address;
-    int user_cont;
+    int user_count;
 //    LinkedList users;
-//    LinkedList queue;
     pid_t users[2];
-    pid_t queue[2];
-    int lock_state;
-    int created_guard;
+    int exec_count;
 };
 
 int mem_region_struct_fd;
@@ -48,7 +45,7 @@ void close_shared_mem(void* addr, size_t shm_size);
 void delete_shared_mem(const char *name);
 int read_shm(void *dest, void *src, size_t num_bytes, int access_num);
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num);
-void lock();
+void lock(int access_num);
 void unlock();
 
 
