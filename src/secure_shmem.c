@@ -2,23 +2,6 @@
 #include "free_list/free_list.h"
 
 
-//GET RID OF LATER
-void psuedo_init(){
-    struct mem_region *arr;
-    struct controller &control;
-    printf("called function\n");
-    //create an array of int_holder structs and a controller
-    arr = malloc(max_size*sizeof(struct mem_region));
-    printf("made it\n");
-
-    //initialize the list
-    if(init(control, arr) != 0){
-        printf("Error during init_holder\n");
-    }
-    printf("successfully initialized list\n");
-
-}
-
 //TODO: figure out how to properly use a mode_t data type
 int assemble_mode (enum access_options access){
 

@@ -6,9 +6,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define max_size 10
+#define max_regions 10
 #define max_users 5
 #define max_name_length 15
+
+#define regions_list_name "/regions_list"
+#define regions_list_lock_name "/regions_lock"
 
 struct controller {
     struct mem_region *used;
@@ -29,6 +32,11 @@ struct mem_region {
     int users[max_users];
     struct mem_region *next;
     struct mem_region *prev;
+};
+
+struct mem_regions_list {
+    struct controller control;
+    struct mem_region regions[max_regions];
 };
 
 int init(struct controller *list_control, struct mem_region *arr);

@@ -7,7 +7,7 @@
 #include <sys/types.h>
 #include <sys/mman.h> 	   	 /* For shm_open()*/
 #include <sys/stat.h>        /* For mode constants */
-#include "../secure_shmem.h"
+#include "../src/secure_shmem.h"
 #include <fcntl.h>           /* For O_* constants */
 #include <time.h> 	/* For time() */
 

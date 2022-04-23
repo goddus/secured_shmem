@@ -1,5 +1,5 @@
 #include "shared_mem.h"
-#include "../secure_shmem.h"
+#include "../src/secure_shmem.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -15,6 +15,11 @@ int main(){
     int i;
 	struct shared_data *shmem;
 	int arr[shared_mem_size];
+
+    //init - should remove later
+    psuedo_init(mem_region_list, control);
+
+    printf("here\n");
 
     shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
     
