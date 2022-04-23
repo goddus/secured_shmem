@@ -24,4 +24,5 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 void close_shared_mem(void* addr, size_t shm_size);
 void delete_shared_mem(const char *name);
 
-
+//for testing purposes
+void psuedo_init(struct mem_region *arr, struct controller *control);

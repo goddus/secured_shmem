@@ -109,7 +109,7 @@ int return_to_free(struct controller *list_control, struct mem_region *node){
 /*
  *  search: 
  */
-struct mem_region *search(struct controller *list_control, char *name){
+struct mem_region *search(struct controller *list_control, const char *name){
 
    //search for struct using memcpy on "name"
    struct mem_region *head;
@@ -134,6 +134,10 @@ void print_list(struct controller *list_control){
     int count = 0;
     for(head = list_control->used; head != NULL; head=head->next){
         printf("node%d: %s\n", count, head->name);
+        printf("fd: %d\n", head->fd);
+        printf("size: %zu\n", head->size);
+        printf("address: %p\n", head->address);
+        printf("-------------------------------\n");
         count++;
     }
 }
