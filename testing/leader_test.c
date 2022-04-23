@@ -10,6 +10,8 @@
 #include <sys/stat.h>        /* For mode constants */
 #include <fcntl.h>           /* For O_* constants */
 
+
+
 int main(){
 
     int i;
@@ -37,16 +39,36 @@ int main(){
     //mapping MEM_REGION_SHM
     char* mem_region_shm_addr = mmap(NULL, sizeof(struct mem_region), PROT_READ | PROT_WRITE, MAP_SHARED, mem_region_struct_fd, 0);
 
-   //error handling for mmap for MEM_REGION_SHM
-   if (mem_region_shm_addr == MAP_FAILED)
-   {
-       printf("there was an error with mmap() for MEM_REGION_SHM\n");
-       return -1;
-   } 
-   mem_region_shm = (struct mem_region*) mem_region_shm_addr; 
+    //error handling for mmap for MEM_REGION_SHM
+    if (mem_region_shm_addr == MAP_FAILED)
+    {
+        printf("there was an error with mmap() for MEM_REGION_SHM\n");
+        return -1;
+    } 
+    mem_region_shm = (struct mem_region*) mem_region_shm_addr; 
+    
+    //printf("made the mem_region_shm\n");
 
-   //set the lock_state to 0 for MEM_REGION_SHM
-   mem_region_shm->lock_state = 0;
+    //initializing the guard variables to be 0 for MEM_REGION_SHM
+    mem_region_shm->write_g = 0;
+    mem_region_shm->read_g = 0;
+    mem_region_shm->delete_g = 0;
+
+    //wait for follower_test to signal that its mapping to MEM_REGION_SHM has been created
+    while (mem_region_shm->write_g == 0)
+    {
+
+    }
+    mem_region_shm->write_g = 0;
+    //printf("got the notification from follower_test that it can write to mem_region_shm\n");
+
+    //set the exec_count to 1 for MEM_REGION_SHM
+    mem_region_shm->exec_count = 1;
+    printf("just set exec_count\n");
+
+    //signal to follower_test that they can start reading from MEM_REGION_SHM
+    mem_region_shm->read_g = 1;
+    //printf("notified the follower_test that it can read from mem_region_shm\n");
 
     //create the shared memory region
     shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
@@ -59,7 +81,9 @@ int main(){
 
 
     //wait for follower to be created
+    //printf("waiting for follower_test shm to be created\n");
     while(shmem->write_guard == 0){}
+    //printf("done waiting for follower_test shm to be created\n");
 
     //fill in array
     srand(time(0));
@@ -74,9 +98,9 @@ int main(){
     }
 
     //copy into struct
-    printf("leader about to call write_shm(), line 76\n");
-    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size);
-    printf("leader finished calling write_shm(), line 78\n");
+    //printf("leader about to call write_shm(), line 76\n");
+    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size, 1);
+    //printf("leader finished calling write_shm(), line 78\n");
 
     //print shared memory, leader perspective
     printf("leader's perspective of what's in shared memory:\n");
@@ -84,7 +108,7 @@ int main(){
     {
         printf("element %d: %d\n", i, shmem->data[i]);
     }
-
+/*
     //tell follower to read
     //shmem->read_guard = 1;
 
@@ -96,6 +120,13 @@ int main(){
 
     //unlink
     delete_shared_mem(shared_mem_name);	
+*/
+    //wait for the follower_test to signal that MEM_REGION_SHM can be deleted
+    while(mem_region_shm->delete_g == 0)
+    {
+
+    }
+    mem_region_shm->delete_g = 0;
 
     //unmap for MEM_REGION_SHM
     munmap(mem_region_shm_addr, sizeof(struct mem_region));

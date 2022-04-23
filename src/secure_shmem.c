@@ -98,7 +98,7 @@ void delete_shared_mem(const char *name){
 
     //TODO: update the data structure
 }
-
+/*
 int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
     printf("in read_shm(), before lock()\n");
     lock();
@@ -120,15 +120,81 @@ int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
     printf("in write_shm(), after unlock()\n");
     return 0;
 }
+*/
+
+//TODO: hardcoding???
+int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
+
+    printf("top of read_shm(), mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
+    //printf("in read_shm() before its first atomic_cmp_x\n");
+    //int expected = access_num;
+    //int desired = (access_num + 1);
+    printf("in read_shm(), current value of exec_count=%d\n", &mem_region_shm->exec_count);
+    //printf("in read_shm(), current value of expected=%d\n", expected);
+    /*
+    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    {
+        expected = access_num;
+    }
+    printf("in read_shm() after its first atomic_cmp_x\n");
+    memcpy(dest, src, num_bytes);
+    printf("in read_shm() before its second atomic_cmp_x\n");
+
+    expected = (access_num + 1);
+    desired = (access_num + 2);
+    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    {
+        expected = (access_num + 1);
+    }
+    printf("in read_shm() after its second atomic_cmp_x\n");
+    */
+}
+
+//TODO: hardcoding???
+int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
+
+    printf("top of write_shm(), mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
+    printf("in write_shm() before its first atomic_cmp_x\n");
+    int expected = access_num;
+    int desired = (access_num + 1);
+    printf("in write_shm(), current value of exec_count=%d\n", mem_region_shm->exec_count);
+    printf("in write_shm(), current value of expected=%d\n", expected);
+    printf("in write_shm(), current value of desired=%d\n", desired);
+    
+    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    {
+        expected = access_num;
+    }
+    printf("in write_shm() after its first atomic_cmp_x, current value of exec_count=%d\n", mem_region_shm->exec_count);
+    
+    memcpy(dest, src, num_bytes);
+    
+    printf("in write_shm() before its second atomic_cmp_x\n");
+    expected = (access_num + 1);
+    desired = (access_num + 2);
+    printf("in write_shm(), current value of exec_count=%d\n", mem_region_shm->exec_count);
+    printf("in write_shm(), current value of expected=%d\n", expected);
+    printf("in write_shm(), current value of desired=%d\n", desired);
+    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+    {
+        expected = (access_num + 1);
+    }
+    printf("in write_shm() after its second atomic_cmp_x\n");
+    printf("in write_shm() end of function, current value of exec_count=%d\n", mem_region_shm->exec_count); 
+    printf("in write_shm() end of function, current value of expected=%d\n", expected); 
+    printf("in write_shm() end of function, current value of desired=%d\n", desired); 
+}
 
 void lock(int access_num)
 {
+    /*
     int expected = UNLOCKED;
     int desired = LOCKED;
     while(!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
     {
         expected = UNLOCKED;
     }
+    */
 }
 
 void unlock()

@@ -35,7 +35,11 @@ struct mem_region
     int user_count;
 //    LinkedList users;
     pid_t users[2];
+    int lock_state;
     int exec_count;
+    int write_g;
+    int read_g;
+    int delete_g;
 };
 
 int mem_region_struct_fd;
