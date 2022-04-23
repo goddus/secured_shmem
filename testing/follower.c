@@ -1,69 +1,87 @@
-#include "shared_mem.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <unistd.h>
-#include <string.h>
+#include "shared_memory.h" 
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <sys/types.h>
-#include <sys/mman.h> 	   	 /* For shm_open()*/
-#include <sys/stat.h>        /* For mode constants */
-#include <fcntl.h>           /* For O_* constants */
-#include <time.h> 	/* For time() */
+#include <stdio.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <string.h>
 
-int main(){
-	
-	int i, fd, ret_val;
-	struct shared_data *shmem;
-	int arr[shared_mem_size];
-	struct timespec start, end;
-	time_t time_seconds;
-	long time_nseconds;
 
-	//create shared memory
-	fd = shm_open(shared_mem_name, O_RDWR, S_IRWXU);
-	if(fd == -1){
-		printf("ERROR: failed to create shared memory region.\n");
-		return 1;
-	}
 
-	//map to address space
-	shmem = (struct shared_data*) mmap(NULL, sizeof(struct shared_data), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
-	if(shmem == MAP_FAILED){
-		printf("ERROR: failed to map to address space.\n");
-		return 1;
-	}
-	
-	clock_gettime(CLOCK_REALTIME, &start);
+int main()
+{
+    int i;
 
-	//notify leader to write and wait
-	shmem->write_guard = 1;
-	while(shmem->read_guard == 0){}
+    //creating a shared memory file descriptor
+    int shared_mem_fd = shm_open(SHARED_MEM, O_RDWR, S_IRWXU);
 
-	//copy into struct
-	memcpy(&arr, (void *)shmem->data, sizeof(int)*shared_mem_size);
 
-	//print data
-	printf("FOLLOWER:\n");
-	for(i = 0; i < shared_mem_size; i++){
-		printf("%d\n", arr[i]);
-	}
+    //error handling for shm_open()
+    if (shared_mem_fd < 0)
+    {
+        printf("there was an error creating a shared memory file descriptor\n");
+        return shared_mem_fd;
+    }
 
-	//notify leader that it can destroy shared memory
-	shmem->delete_guard = 1;
 
-	clock_gettime(CLOCK_REALTIME, &end);
+    //mapping the shared memory to the program's address space
+    char* shm_addr = mmap(NULL, sizeof(struct shared_mem_data), PROT_READ | PROT_WRITE, MAP_SHARED, shared_mem_fd, 0);
 
-	if((end.tv_nsec - start.tv_nsec) < 0){
-		time_seconds = (end.tv_sec - start.tv_sec) - 1;
-		time_nseconds = 1000000000 + (end.tv_nsec - start.tv_nsec); 
-	}
-	else {
-		time_seconds = (end.tv_sec - start.tv_sec);
-        time_nseconds = (end.tv_nsec - start.tv_nsec);	
-	}
 
-	printf("With a array size of %d, the data transfer through shared memory took %d seconds and %ld nanoseconds.\n", shared_mem_size, time_seconds, time_nseconds);	
-	
-	return 0;	
 
+    //error handling for mmap
+    if (shm_addr == MAP_FAILED)
+    {
+        printf("there was an error with mmap()\n");
+        return -1; 
+    }
+
+
+    struct shared_mem_data* shared_mem = (struct shared_mem_data*) shm_addr;
+
+
+    //declaring the local array 
+    int the_array[SHARED_ARRAY_SIZE];
+
+    
+    //signal to the leader that they can start writing
+    shared_mem->write_guard = 1;
+
+
+    //wait for the leader to signal that it can read from the shared data
+    while (shared_mem->read_guard == 0)
+    {
+
+    }
+    shared_mem->read_guard = 0;
+
+
+    //copying the shared memory array contents into the local array element-by-element
+    for (i = 0; i < SHARED_ARRAY_SIZE; ++i)
+    {
+        the_array[i] = shared_mem->data[i];
+    }
+
+    //printing the follower's local array
+    for (i = 0; i < SHARED_ARRAY_SIZE; ++i)
+    {
+        printf("element %d: %d\n", i, the_array[i]);
+    }
+    
+    
+    //signal to the leader that it can delete the shared memory region
+    shared_mem->delete_guard = 1;
+
+
+    //unmapping
+    munmap(shm_addr, sizeof(struct shared_mem_data));
+
+    
+    //unlinking
+    shm_unlink(SHARED_MEM);
+
+
+    return 0;
 }
