@@ -29,7 +29,7 @@ struct mem_region {
     int next_in_queue;
     int queue[max_users];
     int next_open_idx;
-    int users[max_users];
+    pid_t users[max_users];
     struct mem_region *next;
     struct mem_region *prev;
 };
@@ -39,7 +39,7 @@ struct mem_regions_list {
     struct mem_region regions[max_regions];
 };
 
-int init(struct controller *list_control, struct mem_region *arr);
+int initialize_list(struct controller *list_control, struct mem_region *arr);
 struct mem_region *new_node(struct controller *list_control);
 int return_to_free(struct controller *list_control, struct mem_region *node);
 struct mem_region *search(struct controller *list_control, const char *name);

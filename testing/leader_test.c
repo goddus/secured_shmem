@@ -13,11 +13,11 @@
 int main(){
 	
     int i;
-	struct shared_data *shmem;
-	int arr[shared_mem_size];
+    struct shared_data *shmem;
+    int arr[shared_mem_size];
 
     //init - should remove later
-    psuedo_init(mem_region_list, control);
+    init();
 
     printf("here\n");
 

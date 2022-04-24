@@ -1,6 +1,42 @@
 #include "secure_shmem.h"
 #include "free_list/free_list.h"
 
+int init(){
+
+	int list_fd, lock_fd, ret_val;
+
+	//open and map region list
+	list_fd = shm_open(regions_list_name, O_RDWR, S_IRWXU);
+	if(list_fd == -1){
+		printf("error: failed to join list memory region\n");
+		return -1;
+	}
+
+	//map to address space
+	regions_list = (struct mem_regions_list *) mmap(NULL, sizeof(struct mem_regions_list), PROT_READ | PROT_WRITE, MAP_SHARED, list_fd, 0);
+	if(regions_list == MAP_FAILED){
+		printf("error: failed to map list to address space\n");
+		return -1;
+	}
+
+	//open and map region lock
+	lock_fd = shm_open(regions_list_lock_name, O_RDWR, S_IRWXU);
+	if(lock_fd == -1){
+		printf("error: failed to join lock memory region\n");
+		return -1;
+	}
+
+	//map to address space
+	regions_list_lock = (volatile int *) mmap(NULL, sizeof(volatile int), PROT_READ | PROT_WRITE, MAP_SHARED, lock_fd, 0);
+	if(regions_list_lock == MAP_SHARED){
+		printf("error: failed to map lock to address space\n");
+		return -1;
+	}
+
+	return 0;
+
+}
+
 
 //TODO: figure out how to properly use a mode_t data type
 int assemble_mode (enum access_options access){
@@ -22,6 +58,11 @@ int assemble_mode (enum access_options access){
 
 }
 
+void add_user(pid_t pid, struct mem_region *region){
+	region->users[next_open_idx] = pid;
+
+}
+
 
 void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size){
 
@@ -36,7 +77,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
     if (action == CREATE_REGION){
 
         //check that there is room for the region
-        if(control->size >= max_size){
+        if(regions_list->control.size >= max_regions){
             printf("error: out of space for new mem_region\n");
             //TODO: unlock the list
             return NULL;
@@ -50,7 +91,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
         }
 
         //check that the region doesn't exist
-        if(search(control, name) != NULL){
+        if(search(&(regions_list->control), name) != NULL){
             printf("error: region already exists. Try with a different name\n");
             //TODO: unlock the list
             return NULL;
@@ -82,7 +123,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 
 
         //add a new region to the mem regions list
-        struct mem_region *new_region = new_node(control);
+        struct mem_region *new_region = new_node(&(regions_list->control));
         strcpy(new_region->name, name);
         new_region->fd = shm_fd;
         new_region->address = shm_addr;
@@ -93,7 +134,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
     else if (action == JOIN_REGION){
 
         //check that region exists
-        struct mem_region *to_join = search(control, name);
+        struct mem_region *to_join = search(&(regions_list->control), name);
         if(to_join == NULL){
             printf("error: memory region does not exist\n");
             //TODO: unlock the list
@@ -135,12 +176,13 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
     printf("size: %zu\n", size);
     printf("address: %p\n", shm_addr);
     printf("------------------------------\n");
-    print_list(control);
+    print_list(&(regions_list->control));
 
     //TODO:add user to user list
+
     
 
-    //TODO: unlcok the list
+    //TODO: unlock the list
     
     return shm_addr;
 

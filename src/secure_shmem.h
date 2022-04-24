@@ -20,7 +20,10 @@ enum access_options
     BOTH
 };
 
-void init();
+struct mem_regions_list *regions_list;
+volatile int *regions_list_lock;
+
+int init();
 void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size);
 void close_shared_mem(void* addr, size_t shm_size);
 void delete_shared_mem(const char *name);

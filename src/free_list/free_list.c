@@ -8,7 +8,7 @@
 /*
  *  init: 
  */
-int init(struct controller *list_control, struct mem_region *arr){
+int initialize_list(struct controller *list_control, struct mem_region *arr){
     int i;
     list_control->used = NULL;
     list_control->free = arr;
@@ -16,12 +16,12 @@ int init(struct controller *list_control, struct mem_region *arr){
     //set next and previous pointers -- make this better later
     arr[0].prev = NULL;
     arr[0].next = &arr[1];
-    for(i = 1; i < max_size-1; i++){
+    for(i = 1; i < max_regions-1; i++){
         arr[i].next = &arr[i+1];
         arr[i].prev = &arr[i-1];
     }
-    arr[max_size-1].prev = &arr[max_size-2];
-    arr[max_size-1].next = NULL;
+    arr[max_regions-1].prev = &arr[max_regions-2];
+    arr[max_regions-1].next = NULL;
 
     //set size
     list_control->size = 0;
@@ -35,7 +35,7 @@ int init(struct controller *list_control, struct mem_region *arr){
 struct mem_region *new_node(struct controller *list_control){
 
     //check that there is space
-    if(list_control->size >= max_size){
+    if(list_control->size >= max_regions){
         printf("Error: no more space in list\n");
         return NULL;
     }
