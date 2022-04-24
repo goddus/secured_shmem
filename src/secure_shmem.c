@@ -58,10 +58,10 @@ int assemble_mode (enum access_options access){
 
 }
 
-void add_user(pid_t pid, struct mem_region *region){
+/*void add_user(pid_t pid, struct mem_region *region){
 	region->users[next_open_idx] = pid;
 
-}
+}*/
 
 
 void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size){
@@ -100,7 +100,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
         //create region
         shm_fd = shm_open(name, access_level | O_CREAT, S_IRWXU);
         if (shm_fd < 0){
-            printf("error creating a shared memory file descriptor\n");
+            printf("error creating a shared memory file descriptor: %s\n", strerror(errno));
             //TODO: unlock the list
             return NULL;
         }
@@ -121,6 +121,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
             return NULL;
         }
 
+        print_list(&(regions_list->control));
 
         //add a new region to the mem regions list
         struct mem_region *new_region = new_node(&(regions_list->control));

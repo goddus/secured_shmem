@@ -16,13 +16,17 @@ int main(){
     struct shared_data *shmem;
     int arr[shared_mem_size];
 
-    //init - should remove later
+    //init
     init();
-
+    
     printf("here\n");
 
     shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
-    
+    if(shmem == NULL){
+        printf("error: creating region\n");
+        return -1;
+    }
+
     //initialize guard variables to 0
 	shmem->write_guard = 0;
 	shmem->read_guard = 0;
@@ -50,6 +54,7 @@ int main(){
 
     //munmap
     close_shared_mem(shmem, sizeof(struct shared_data));
+   
 
 	//unlink
     delete_shared_mem(shared_mem_name);	

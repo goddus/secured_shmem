@@ -130,6 +130,7 @@ struct mem_region *search(struct controller *list_control, const char *name){
 void print_list(struct controller *list_control){
     
     //print used list
+    printf("printing list...\n");
     struct mem_region *head;
     int count = 0;
     for(head = list_control->used; head != NULL; head=head->next){
