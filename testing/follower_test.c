@@ -53,7 +53,8 @@ int main(){
     }
     mem_region_shm->read_g = 0;
 
-    //printf("exec_count from the follower_test perspective: %d\n", mem_region_shm->exec_count);
+    printf("exec_count from the follower_test perspective: %d\n", mem_region_shm->exec_count);
+    printf("current_state from the follower_test perspective: %d\n", mem_region_shm->current_state);
 
 
     //join the shared memory region 
@@ -68,15 +69,15 @@ int main(){
     
     //printf("follower about to call read_shm(), line 32\n");
     //copy into struct
-    read_shm(&arr, (void*)shmem->data, sizeof(int)*shared_mem_size, 3);
+    read_shm(&arr, (void*)shmem->data, sizeof(int)*shared_mem_size, 1);
     //printf("follower finished calling read_shm(), line 35\n");
-/*
+
     //printing the follower's local array
     printf("follower's local array:\n");
     for (i = 0; i < shared_mem_size; ++i){
         printf("element %d: %d\n", i, arr[i]);
     }
-
+/*
     //print shared memory, follower perspective
     printf("follower's perspective of what's in shared memory:\n");
     for (i = 0; i < shared_mem_size; i++)

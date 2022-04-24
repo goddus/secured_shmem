@@ -9,6 +9,8 @@
 #include <linux/futex.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/syscall.h>
+#include <limits.h>
 
 #define UNLOCKED 0
 #define LOCKED 1
@@ -35,7 +37,7 @@ struct mem_region
     int user_count;
 //    LinkedList users;
     pid_t users[2];
-    int lock_state;
+    volatile int current_state;
     int exec_count;
     int write_g;
     int read_g;
@@ -49,7 +51,7 @@ void close_shared_mem(void* addr, size_t shm_size);
 void delete_shared_mem(const char *name);
 int read_shm(void *dest, void *src, size_t num_bytes, int access_num);
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num);
-void lock(int access_num);
-void unlock();
+void lock(volatile int* data);
+void unlock(volatile int* data);
 
 

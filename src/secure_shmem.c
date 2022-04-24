@@ -2,7 +2,6 @@
 #include "linked_list/mem_region_list.h"
 
 
-
 //modified test comment
 //TODO: figure out how to properly use a mode_t data type
 int assemble_mode (enum access_options access){
@@ -74,7 +73,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
     //TODO: update the data structure
 
     return shm_addr;
-    
+
 }
 
 
@@ -84,7 +83,7 @@ void close_shared_mem(void* addr, size_t shm_size){
     munmap(addr, shm_size);
 
     //close() the file descriptor
-    
+
     //update the linked list data structure
 
 }
@@ -98,112 +97,97 @@ void delete_shared_mem(const char *name){
 
     //TODO: update the data structure
 }
-/*
+
 int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
-    printf("in read_shm(), before lock()\n");
-    lock();
-    printf("in read_shm(), after lock()\n");
-    memcpy(dest, src, num_bytes);
-    printf("in read_shm(), before unlock()\n");
-    unlock();
-    printf("in read_shm(), after unlock()\n");
+    int try_again = 1;
+    while (try_again == 1)
+    {
+        lock(&(mem_region_shm->current_state));
+        //exec_count and reading stuff
+        if (mem_region_shm->exec_count == access_num)
+        {
+            memcpy(dest, src, num_bytes);
+            try_again = 0;
+            mem_region_shm->exec_count = (mem_region_shm->exec_count+1);
+        }
+        unlock(&(mem_region_shm->current_state));
+    }
     return 0;
 }
 
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
-    printf("in write_shm(), before lock()\n");
-    lock(access_num);
-    printf("in write_shm(), after lock()\n");
-    memcpy(dest, src, num_bytes);
-    printf("in write_shm(), before unlock()\n");
-    unlock();
-    printf("in write_shm(), after unlock()\n");
+    printf("at the top of write_shm()\n");
+    printf("mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
+    printf("access_num: %d\n", access_num);
+    int try_again = 1;
+    while(try_again == 1)
+    {
+        lock(&(mem_region_shm->current_state));
+        //exec_count and writing stuff
+        if (mem_region_shm->exec_count == access_num)
+        {
+            printf("in the if statement in write_shm()\n");
+            memcpy(dest, src, num_bytes);
+            try_again = 0;
+            mem_region_shm->exec_count = (mem_region_shm->exec_count+1);
+        } 
+        unlock(&(mem_region_shm->current_state));
+    }
     return 0;
 }
-*/
-
-//TODO: hardcoding???
-int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
-
-    printf("top of read_shm(), mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
-    //printf("in read_shm() before its first atomic_cmp_x\n");
-    //int expected = access_num;
-    //int desired = (access_num + 1);
-    printf("in read_shm(), current value of exec_count=%d\n", &mem_region_shm->exec_count);
-    //printf("in read_shm(), current value of expected=%d\n", expected);
-    /*
-    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-    {
-        expected = access_num;
-    }
-    printf("in read_shm() after its first atomic_cmp_x\n");
-    memcpy(dest, src, num_bytes);
-    printf("in read_shm() before its second atomic_cmp_x\n");
-
-    expected = (access_num + 1);
-    desired = (access_num + 2);
-    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-    {
-        expected = (access_num + 1);
-    }
-    printf("in read_shm() after its second atomic_cmp_x\n");
-    */
-}
-
-//TODO: hardcoding???
-int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
-
-    printf("top of write_shm(), mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
-    printf("in write_shm() before its first atomic_cmp_x\n");
-    int expected = access_num;
-    int desired = (access_num + 1);
-    printf("in write_shm(), current value of exec_count=%d\n", mem_region_shm->exec_count);
-    printf("in write_shm(), current value of expected=%d\n", expected);
-    printf("in write_shm(), current value of desired=%d\n", desired);
-    
-    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-    {
-        expected = access_num;
-    }
-    printf("in write_shm() after its first atomic_cmp_x, current value of exec_count=%d\n", mem_region_shm->exec_count);
-    
-    memcpy(dest, src, num_bytes);
-    
-    printf("in write_shm() before its second atomic_cmp_x\n");
-    expected = (access_num + 1);
-    desired = (access_num + 2);
-    printf("in write_shm(), current value of exec_count=%d\n", mem_region_shm->exec_count);
-    printf("in write_shm(), current value of expected=%d\n", expected);
-    printf("in write_shm(), current value of desired=%d\n", desired);
-    while(!__atomic_compare_exchange(&mem_region_shm->exec_count, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-    {
-        expected = (access_num + 1);
-    }
-    printf("in write_shm() after its second atomic_cmp_x\n");
-    printf("in write_shm() end of function, current value of exec_count=%d\n", mem_region_shm->exec_count); 
-    printf("in write_shm() end of function, current value of expected=%d\n", expected); 
-    printf("in write_shm() end of function, current value of desired=%d\n", desired); 
-}
-
-void lock(int access_num)
+void lock(volatile int* data)
 {
     /*
-    int expected = UNLOCKED;
-    int desired = LOCKED;
-    while(!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+       int expected = UNLOCKED;
+       int desired = LOCKED;
+       while(!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+       {
+       expected = UNLOCKED;
+       }
+       */
+    int ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
+
+    if (ret_val >= 0)
     {
-        expected = UNLOCKED;
+        printf("locked successfully\n");
+        return;
     }
-    */
+    else
+    {
+        syscall(SYS_futex, data, FUTEX_WAIT, ret_val, NULL);
+        while (ret_val < 0)
+        {
+            ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
+        }
+        ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
+        printf("locked successfully\n");
+        return;
+    }
 }
 
-void unlock()
+void unlock(volatile int* data)
 {
+    /*
     int expected = LOCKED;
     int desired = UNLOCKED;
     if (!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
     {
         printf("ERROR with unlock\n");
+        return;
+    }
+    */
+    int ret_val = __atomic_add_fetch(data, 1, __ATOMIC_ACQ_REL);
+
+    if (ret_val == 1)
+    {
+        printf("unlocked successfully\n");
+        return;
+    }
+    else
+    {
+        __atomic_store_n(data, 1, __ATOMIC_RELEASE);
+        printf("unlocked successfully\n");
+        syscall(SYS_futex, data, FUTEX_WAKE, INT_MAX);
         return;
     }
 }

@@ -63,7 +63,8 @@ int main(){
     //printf("got the notification from follower_test that it can write to mem_region_shm\n");
 
     //set the exec_count to 1 for MEM_REGION_SHM
-    mem_region_shm->exec_count = 1;
+    mem_region_shm->exec_count = 0;
+    mem_region_shm->current_state = 1;
     printf("just set exec_count\n");
 
     //signal to follower_test that they can start reading from MEM_REGION_SHM
@@ -72,7 +73,6 @@ int main(){
 
     //create the shared memory region
     shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
-
 
     //initialize guard variables to 0
     shmem->write_guard = 0;
@@ -99,7 +99,7 @@ int main(){
 
     //copy into struct
     //printf("leader about to call write_shm(), line 76\n");
-    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size, 1);
+    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size, 0);
     //printf("leader finished calling write_shm(), line 78\n");
 
     //print shared memory, leader perspective
@@ -114,13 +114,13 @@ int main(){
 
     //wait for follower to read
     while(shmem->delete_guard == 0){}
-
+*/
     //munmap
     close_shared_mem(shmem, sizeof(struct shared_data));
 
     //unlink
     delete_shared_mem(shared_mem_name);	
-*/
+
     //wait for the follower_test to signal that MEM_REGION_SHM can be deleted
     while(mem_region_shm->delete_g == 0)
     {
