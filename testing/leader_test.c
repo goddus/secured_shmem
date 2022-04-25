@@ -11,14 +11,9 @@
 #include <fcntl.h>           /* For O_* constants */
 
 
-
-int main(){
-
-    int i;
-    struct shared_data *shmem;
-    int arr[shared_mem_size];
-
-    //for now allocating a mem_region struct for this test shared memory region until we integrate the linked list code to hold it instead. putting that mem_region struct in its own shared memory region (lol) tagged in comments with: MEM_REGION_SHM
+int open_mem_region_struct()
+{
+    //tagged everything to do with this mem_region struct with MEM_REGION_SHM in the comment
     mem_region_struct_fd = shm_open("test_mem_region", (O_RDWR | O_CREAT), S_IRWXU);
     if (mem_region_struct_fd < 0)
     {
@@ -37,7 +32,7 @@ int main(){
     }
 
     //mapping MEM_REGION_SHM
-    char* mem_region_shm_addr = mmap(NULL, sizeof(struct mem_region), PROT_READ | PROT_WRITE, MAP_SHARED, mem_region_struct_fd, 0);
+    mem_region_shm_addr = mmap(NULL, sizeof(struct mem_region), PROT_READ | PROT_WRITE, MAP_SHARED, mem_region_struct_fd, 0);
 
     //error handling for mmap for MEM_REGION_SHM
     if (mem_region_shm_addr == MAP_FAILED)
@@ -45,10 +40,15 @@ int main(){
         printf("there was an error with mmap() for MEM_REGION_SHM\n");
         return -1;
     } 
-    mem_region_shm = (struct mem_region*) mem_region_shm_addr; 
-    
-    //printf("made the mem_region_shm\n");
+    mem_region_shm = (struct mem_region*) mem_region_shm_addr;
 
+
+
+    return 0;
+}
+
+int configure_mem_region()
+{
     //initializing the guard variables to be 0 for MEM_REGION_SHM
     mem_region_shm->write_g = 0;
     mem_region_shm->read_g = 0;
@@ -60,12 +60,54 @@ int main(){
 
     }
     mem_region_shm->write_g = 0;
-    //printf("got the notification from follower_test that it can write to mem_region_shm\n");
 
     //set the exec_count to 1 for MEM_REGION_SHM
     mem_region_shm->exec_count = 0;
-    mem_region_shm->current_state = 1;
+    mem_region_shm->current_state = UNLOCKED;
+
+
+    return 0; 
+}
+
+int main(){
+
+    int i;
+    struct shared_data *shmem;
+    int arr[shared_mem_size];
+
+    //allocated space for the mem_region struct used in testing in a shared memory region of its own (which was set up with the current POSIX shared memory implementation)
+    open_mem_region_struct();
+    /*
+    //mapping MEM_REGION_SHM
+    char* mem_region_shm_addr = mmap(NULL, sizeof(struct mem_region), PROT_READ | PROT_WRITE, MAP_SHARED, mem_region_struct_fd, 0);
+
+    //error handling for mmap for MEM_REGION_SHM
+    if (mem_region_shm_addr == MAP_FAILED)
+    {
+    printf("there was an error with mmap() for MEM_REGION_SHM\n");
+    return -1;
+    } 
+    mem_region_shm = (struct mem_region*) mem_region_shm_addr;
+    */
+    configure_mem_region(); 
+    /*
+    //initializing the guard variables to be 0 for MEM_REGION_SHM
+    mem_region_shm->write_g = 0;
+    mem_region_shm->read_g = 0;
+    mem_region_shm->delete_g = 0;
+
+    //wait for follower_test to signal that its mapping to MEM_REGION_SHM has been created
+    while (mem_region_shm->write_g == 0)
+    {
+
+    }
+    mem_region_shm->write_g = 0;
+
+    //set the exec_count to 1 for MEM_REGION_SHM
+    mem_region_shm->exec_count = 0;
+    mem_region_shm->current_state = UNLOCKED;
     printf("just set exec_count\n");
+    */
 
     //signal to follower_test that they can start reading from MEM_REGION_SHM
     mem_region_shm->read_g = 1;
@@ -75,20 +117,14 @@ int main(){
     shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
 
     //initialize guard variables to 0
-    shmem->write_guard = 0;
-    shmem->read_guard = 0;
-    shmem->delete_guard = 0;
-
+    shmem->join_guard = 0;
 
     //wait for follower to be created
-    //printf("waiting for follower_test shm to be created\n");
-    while(shmem->write_guard == 0){}
-    //printf("done waiting for follower_test shm to be created\n");
+    while(shmem->join_guard == 0){}
 
     //fill in array
-    srand(time(0));
     for(i = 0; i < shared_mem_size; i++){
-        arr[i] = rand();
+        arr[i] = i;
     }
 
     //printing the leader's local array
@@ -99,7 +135,7 @@ int main(){
 
     //copy into struct
     //printf("leader about to call write_shm(), line 76\n");
-    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size, 0);
+    write_shm((void*)shmem->data, &arr, sizeof(int)*shared_mem_size, 1);
     //printf("leader finished calling write_shm(), line 78\n");
 
     //print shared memory, leader perspective
@@ -108,13 +144,7 @@ int main(){
     {
         printf("element %d: %d\n", i, shmem->data[i]);
     }
-/*
-    //tell follower to read
-    //shmem->read_guard = 1;
 
-    //wait for follower to read
-    while(shmem->delete_guard == 0){}
-*/
     //munmap
     close_shared_mem(shmem, sizeof(struct shared_data));
 

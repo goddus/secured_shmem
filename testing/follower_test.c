@@ -41,21 +41,22 @@ int main(){
     mem_region_shm = (struct mem_region*) mem_region_shm_addr; 
 
     //printf("joined the mem_region_shm\n");
-    
+
     //notify leader_test that it can write to MEM_REGION_SHM
     mem_region_shm->write_g = 1; 
     //printf("notified leader_test that it can write to mem_region_shm\n");
 
+    
     //wait for leader_test to signal that it can read from MEM_REGION_SHM
     while(mem_region_shm->read_g == 0)
     {
 
     }
     mem_region_shm->read_g = 0;
-
+   
     printf("exec_count from the follower_test perspective: %d\n", mem_region_shm->exec_count);
     printf("current_state from the follower_test perspective: %d\n", mem_region_shm->current_state);
-
+    
 
     //join the shared memory region 
     shmem = (struct shared_data *) open_shared_mem(shared_mem_name, JOIN_REGION, BOTH, sizeof(struct shared_data));
@@ -63,13 +64,13 @@ int main(){
     clock_gettime(CLOCK_REALTIME, &start);
 
     //notify leader to write and wait
-    shmem->write_guard = 1;
-    //printf("just set shmem->write_guard to 1\n");
+    shmem->join_guard = 1;
+    //printf("just set shmem->join_guard to 1\n");
     //while(shmem->read_guard == 0){}
-    
+
     //printf("follower about to call read_shm(), line 32\n");
     //copy into struct
-    read_shm(&arr, (void*)shmem->data, sizeof(int)*shared_mem_size, 1);
+    read_shm(&arr, (void*)shmem->data, sizeof(int)*shared_mem_size, 0);
     //printf("follower finished calling read_shm(), line 35\n");
 
     //printing the follower's local array
@@ -77,14 +78,21 @@ int main(){
     for (i = 0; i < shared_mem_size; ++i){
         printf("element %d: %d\n", i, arr[i]);
     }
-/*
+
+    read_shm(&arr, (void*)shmem->data, sizeof(int)*shared_mem_size, 2);
+    //printing the follower's local array
+    printf("follower's local array:\n");
+    for (i = 0; i < shared_mem_size; ++i){
+        printf("element %d: %d\n", i, arr[i]);
+    }
+    /*
     //print shared memory, follower perspective
     printf("follower's perspective of what's in shared memory:\n");
     for (i = 0; i < shared_mem_size; i++)
     {
-        printf("element %d: %d\n", i, shmem->data[i]);
+    printf("element %d: %d\n", i, shmem->data[i]);
     }
-*/
+    */
     //notify leader that it can destroy shared memory
     //shmem->delete_guard = 1;
 
