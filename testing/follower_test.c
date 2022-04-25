@@ -12,7 +12,7 @@
 #include <time.h> 	/* For time() */
 
 int main(){
-	
+
 	int i, fd, ret_val;
 	struct shared_data *shmem;
 	int arr[shared_mem_size];
@@ -20,9 +20,11 @@ int main(){
 	time_t time_seconds;
 	long time_nseconds;
 
-   
-    shmem = (struct shared_data *) open_shared_mem(shared_mem_name, JOIN_REGION, BOTH, sizeof(struct shared_data));
-	
+	//init
+	init();
+
+	shmem = (struct shared_data *) open_shared_mem(shared_mem_name, JOIN_REGION, BOTH, sizeof(struct shared_data));
+
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	//notify leader to write and wait
@@ -33,10 +35,10 @@ int main(){
 	memcpy(&arr, (void *)shmem->data, sizeof(int)*shared_mem_size);
 
 	//print data
-	printf("FOLLOWER:\n");
+	/*printf("FOLLOWER:\n");
 	for(i = 0; i < shared_mem_size; i++){
 		printf("%d\n", arr[i]);
-	}
+	}*/
 
 
 	//notify leader that it can destroy shared memory
@@ -50,13 +52,13 @@ int main(){
 	}
 	else {
 		time_seconds = (end.tv_sec - start.tv_sec);
-        time_nseconds = (end.tv_nsec - start.tv_nsec);	
+		time_nseconds = (end.tv_nsec - start.tv_nsec);	
 	}
 
-	printf("With a array size of %d, the data transfer through shared memory took %d seconds and %ld nanoseconds.\n", shared_mem_size, time_seconds, time_nseconds);	
-	
-    //munmap
-    close_shared_mem(shmem, sizeof(struct shared_data));
+	//printf("With a array size of %d, the data transfer through shared memory took %d seconds and %ld nanoseconds.\n", shared_mem_size, time_seconds, time_nseconds);	
+
+	//munmap
+	close_shared_mem(shared_mem_name, shmem);
 
 	return 0;	
 

@@ -58,11 +58,25 @@ int assemble_mode (enum access_options access){
 
 }
 
-/*void add_user(pid_t pid, struct mem_region *region){
-	region->users[next_open_idx] = pid;
+void add_user(pid_t pid, struct mem_region *region){
+	region->users[region->next_open_idx] = pid;
+	for(int i = 0; i < max_users; i++){
+		if(region->users[i] == 0){
+			region->next_open_idx = i;
+			break;
+		}
+	}	
+}
 
-}*/
-
+void delete_user(pid_t pid, struct mem_region *region){
+	for(int i = 0; i < max_users; i++){
+		if(region->users[i] == pid){
+			region->users[i] = 0;
+			region->next_open_idx = i;
+			break;
+		}
+	}
+}
 
 void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size){
 
@@ -97,10 +111,11 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
             return NULL;
         }
 
+
         //create region
         shm_fd = shm_open(name, access_level | O_CREAT, S_IRWXU);
         if (shm_fd < 0){
-            printf("error creating a shared memory file descriptor: %s\n", strerror(errno));
+            printf("error creating a shared memory file descriptor\n");
             //TODO: unlock the list
             return NULL;
         }
@@ -121,7 +136,6 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
             return NULL;
         }
 
-        print_list(&(regions_list->control));
 
         //add a new region to the mem regions list
         struct mem_region *new_region = new_node(&(regions_list->control));
@@ -129,6 +143,8 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
         new_region->fd = shm_fd;
         new_region->address = shm_addr;
         new_region->size = size;
+	new_region->user_count++;
+	add_user(getpid(), new_region);
     }
 
     //if user is joining region
@@ -164,6 +180,10 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
             //TODO: unlock the list
             return NULL;
         }
+
+	//update data structure
+	to_join->user_count++;
+	add_user(getpid(), to_join);
     }
 
     else{
@@ -179,10 +199,6 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
     printf("------------------------------\n");
     print_list(&(regions_list->control));
 
-    //TODO:add user to user list
-
-    
-
     //TODO: unlock the list
     
     return shm_addr;
@@ -190,28 +206,84 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 }
 
 
-void close_shared_mem(void* addr, size_t shm_size){
+void close_shared_mem(char *name, void* addr){
 
     //TODO: lock the list
     
-    //check that the region exists
+    //check that region exists
+    struct mem_region *to_close = search(&(regions_list->control), name);
+    if(to_close == NULL){
+    	printf("error: memory region does not exist\n");
+        //TODO: unlock the list
+        return;
+    }
     
+    //update data structure
+    to_close->user_count--;
+    delete_user(getpid(), to_close);
+
 
     //munmap()
-    munmap(addr, shm_size);
+    if(munmap(addr, to_close->size) == -1){
+	printf("error unmapping while closing\n");
+	//TODO: unlock the list
+	return;
+    }
 
-    //close() the file descriptor
-
-    //update the linked list data structure
-
+    //TODO: unlock the list
 }
 
 void delete_shared_mem(const char *name){
+ 
+    //TODO: lock the list
 
-    //TODO: verify that this is the last user of the shm region
+    
+    //check that region exists
+    struct mem_region *to_delete = search(&(regions_list->control), name);
+    if(to_delete == NULL){
+    	printf("error: memory region does not exist\n");
+        //TODO: unlock the list
+        return;
+    }
+
+    //verify that this is the last user of the shm region
+    if(to_delete->user_count != 1){
+	printf("error: all processes have not closed the region\n");
+	//TODO: unlock the list
+	return;
+    }
+
+    //unmap the region
+    if(munmap(to_delete->address, to_delete->size) == -1){
+	printf("error unmapping while deleting\n");
+	//TODO: unlock the list
+	return;
+    }
+
+    //close the file descriptor
+    if(close(to_delete->fd) == -1){
+	printf("error closing while deleting\n");
+	//TODO: unlock the list
+	return;
+    }
 
     //shm_unlink() the shm region
-    shm_unlink(name);
+    if(shm_unlink(name) == -1){
+	printf("error unlinking while deleting\n");
+	//TODO: unlock the list
+	return;
+    }
 
-    //TODO: update the data structure
+    //update the data structure
+    if(return_to_free(&(regions_list->control), to_delete) == -1){
+	printf("error removing region from list\n");
+	return;
+    } 
+
+    //check output
+    print_list(&(regions_list->control));
+
+
+    //TODO: unlock the list
+
 }

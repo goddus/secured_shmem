@@ -130,7 +130,6 @@ struct mem_region *search(struct controller *list_control, const char *name){
 void print_list(struct controller *list_control){
     
     //print used list
-    printf("printing list...\n");
     struct mem_region *head;
     int count = 0;
     for(head = list_control->used; head != NULL; head=head->next){
@@ -138,6 +137,11 @@ void print_list(struct controller *list_control){
         printf("fd: %d\n", head->fd);
         printf("size: %zu\n", head->size);
         printf("address: %p\n", head->address);
+	printf("users: ");
+	for(int i = 0; i < max_users; i++){
+		printf("%d ", head->users[i]);
+	}
+	printf("\n");
         printf("-------------------------------\n");
         count++;
     }

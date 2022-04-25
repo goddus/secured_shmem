@@ -1,4 +1,4 @@
-#define shared_mem_name "/region4"
+#define shared_mem_name "/shared_mem"
 #define shared_mem_size 10
 
 struct shared_data {
