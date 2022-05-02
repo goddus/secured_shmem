@@ -1,3 +1,9 @@
+/*
+ *  follower_test.c: tests creation, closing and deltion of memory regions
+ *                      (to be used in complement with leader_test.c)
+ *                      (modified from CSE422 Studio 12)
+ */
+
 #include "shared_mem.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -34,28 +40,8 @@ int main(){
 	//copy into struct
 	memcpy(&arr, (void *)shmem->data, sizeof(int)*shared_mem_size);
 
-	//print data
-	/*printf("FOLLOWER:\n");
-	for(i = 0; i < shared_mem_size; i++){
-		printf("%d\n", arr[i]);
-	}*/
-
-
 	//notify leader that it can destroy shared memory
 	shmem->delete_guard = 1;
-
-	clock_gettime(CLOCK_REALTIME, &end);
-
-	if((end.tv_nsec - start.tv_nsec) < 0){
-		time_seconds = (end.tv_sec - start.tv_sec) - 1;
-		time_nseconds = 1000000000 + (end.tv_nsec - start.tv_nsec); 
-	}
-	else {
-		time_seconds = (end.tv_sec - start.tv_sec);
-		time_nseconds = (end.tv_nsec - start.tv_nsec);	
-	}
-
-	//printf("With a array size of %d, the data transfer through shared memory took %d seconds and %ld nanoseconds.\n", shared_mem_size, time_seconds, time_nseconds);	
 
 	//munmap
 	close_shared_mem(shared_mem_name, shmem);

@@ -1,3 +1,10 @@
+/*
+ * leader_test.c: tests creation, closing and deletion of memory regions 
+ *                  (to be used in complement with follower_test.c)
+ *                  (modified from CSE422 Studio 12)
+ *                
+ */
+
 #include "shared_mem.h"
 #include "../src/secure_shmem.h"
 #include <stdio.h>
@@ -19,8 +26,6 @@ int main(){
 	//init - should remove later
 	init();
 
-	printf("here\n");
-
 	shmem = (struct shared_data*)open_shared_mem(shared_mem_name, CREATE_REGION, BOTH, sizeof(struct shared_data));
 
 	//initialize guard variables to 0
@@ -32,12 +37,10 @@ int main(){
 	while(shmem->write_guard == 0){}
 
 	//fill in array
-	/*srand(time(0));
-	printf("LEADER: \n");
+	srand(time(0));
 	for(i = 0; i < shared_mem_size; i++){
 		arr[i] = rand();
-		printf("%d\n", arr[i]); 
-	} */
+	}
 
 	//copy into struct
 	memcpy((void *)shmem->data, &arr, sizeof(int)*shared_mem_size);

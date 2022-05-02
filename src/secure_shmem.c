@@ -1,6 +1,17 @@
+/*
+ *  secure_shmem.c: main secure shm library 
+ *                  (for creation, reading/writing, closing and deleting)
+ */
+
 #include "secure_shmem.h"
 #include "free_list/free_list.h"
 
+
+
+/*
+ *  init: meant to be called before any other library function
+ *          maps data structures relevant to the library
+ */
 int init(){
 
 	int list_fd, lock_fd, ret_val;
@@ -9,58 +20,62 @@ int init(){
 	list_fd = shm_open(regions_list_name, O_RDWR, S_IRWXU);
 	if(list_fd == -1){
 		printf("error: failed to join list memory region\n");
-		return -1;
+		return MAPPING_FAILURE;
 	}
 
 	//map to address space
 	regions_list = (struct mem_regions_list *) mmap(NULL, sizeof(struct mem_regions_list), PROT_READ | PROT_WRITE, MAP_SHARED, list_fd, 0);
 	if(regions_list == MAP_FAILED){
 		printf("error: failed to map list to address space\n");
-		return -1;
+		return MAPPING_FAILURE;
 	}
 
 	//open and map region lock
 	lock_fd = shm_open(regions_list_lock_name, O_RDWR, S_IRWXU);
 	if(lock_fd == -1){
 		printf("error: failed to join lock memory region\n");
-		return -1;
+		return MAPPING_FAILURE;
 	}
 
 	//map to address space
 	regions_list_lock = (volatile int *) mmap(NULL, sizeof(volatile int), PROT_READ | PROT_WRITE, MAP_SHARED, lock_fd, 0);
-	if(regions_list_lock == MAP_SHARED){
+	if(regions_list_lock == MAP_FAILED){
 		printf("error: failed to map lock to address space\n");
-		return -1;
+		return MAPPING_FAILURE;
 	}
 
-	return 0;
+	return SUCCESS;
 
 }
 
-
-//TODO: figure out how to properly use a mode_t data type
+/*
+ *  assemble_mode: return correct access option for
+ *                  opening shared mem
+ */
 int assemble_mode (enum access_options access){
 
-    int mem_region_mode;
-
     if (access == READ){
-        mem_region_mode = O_RDONLY;
+        return O_RDONLY;
     }
     else if (access == WRITE){
-        mem_region_mode = O_WRONLY;
+        return O_WRONLY;
     }
     else if (access == BOTH){
-        mem_region_mode = O_RDWR;
+        return O_RDWR;
     }
-
-    return mem_region_mode;
-    //TODO: figure out how to return an error value from this
+    else {
+        return INVALID_ACCESS;
+    }
 
 }
 
+/*
+ *  add_user: adds user pid to region's user list
+ */
 void add_user(pid_t pid, struct mem_region *region){
+    int i;
 	region->users[region->next_open_idx] = pid;
-	for(int i = 0; i < max_users; i++){
+	for(i = 0; i < max_users; i++){
 		if(region->users[i] == 0){
 			region->next_open_idx = i;
 			break;
@@ -68,8 +83,12 @@ void add_user(pid_t pid, struct mem_region *region){
 	}	
 }
 
+/*
+ *  delete_user: removes user pid from region's user list
+ */
 void delete_user(pid_t pid, struct mem_region *region){
-	for(int i = 0; i < max_users; i++){
+    int i;
+	for(i = 0; i < max_users; i++){
 		if(region->users[i] == pid){
 			region->users[i] = 0;
 			region->next_open_idx = i;
@@ -78,6 +97,9 @@ void delete_user(pid_t pid, struct mem_region *region){
 	}
 }
 
+/*
+ * open_shared_mem: creates or opens a secured shared memory region
+ */
 void *open_shared_mem (const char *name, enum create_or_join action, enum access_options access, off_t size){
 
     //TODO: lock the list
@@ -143,8 +165,8 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
         new_region->fd = shm_fd;
         new_region->address = shm_addr;
         new_region->size = size;
-	new_region->user_count++;
-	add_user(getpid(), new_region);
+	    new_region->user_count++;
+	    add_user(getpid(), new_region);
     }
 
     //if user is joining region
@@ -181,13 +203,14 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
             return NULL;
         }
 
-	//update data structure
-	to_join->user_count++;
-	add_user(getpid(), to_join);
+	    //update data structure
+	    to_join->user_count++;
+	    add_user(getpid(), to_join);
     }
 
     else{
-        errno = EINVAL;    
+        printf("invalid create option\n");
+        return NULL;
     }
 
     //check list variables
@@ -205,7 +228,9 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 
 }
 
-
+/*
+ *  close_shared_mem: closes the secured memory region
+ */
 void close_shared_mem(char *name, void* addr){
 
     //TODO: lock the list
@@ -225,14 +250,18 @@ void close_shared_mem(char *name, void* addr){
 
     //munmap()
     if(munmap(addr, to_close->size) == -1){
-	printf("error unmapping while closing\n");
-	//TODO: unlock the list
-	return;
+	    printf("error unmapping while closing\n");
+	    //TODO: unlock the list
+	    return;
     }
 
     //TODO: unlock the list
 }
 
+
+/*
+ *  delete_shared_mem: deletes the shared memory region
+ */
 void delete_shared_mem(const char *name){
  
     //TODO: lock the list
@@ -248,36 +277,36 @@ void delete_shared_mem(const char *name){
 
     //verify that this is the last user of the shm region
     if(to_delete->user_count != 1){
-	printf("error: all processes have not closed the region\n");
-	//TODO: unlock the list
-	return;
+	    printf("error: all processes have not closed the region\n");
+	    //TODO: unlock the list
+	    return;
     }
 
     //unmap the region
     if(munmap(to_delete->address, to_delete->size) == -1){
-	printf("error unmapping while deleting\n");
-	//TODO: unlock the list
-	return;
+	    printf("error unmapping while deleting\n");
+	    //TODO: unlock the list
+	    return;
     }
 
     //close the file descriptor
     if(close(to_delete->fd) == -1){
-	printf("error closing while deleting\n");
-	//TODO: unlock the list
-	return;
+	    printf("error closing while deleting\n");
+	    //TODO: unlock the list
+	    return;
     }
 
     //shm_unlink() the shm region
     if(shm_unlink(name) == -1){
-	printf("error unlinking while deleting\n");
-	//TODO: unlock the list
-	return;
+	    printf("error unlinking while deleting\n");
+	    //TODO: unlock the list
+	    return;
     }
 
     //update the data structure
     if(return_to_free(&(regions_list->control), to_delete) == -1){
-	printf("error removing region from list\n");
-	return;
+	    printf("error removing region from list\n");
+	    return;
     } 
 
     //check output

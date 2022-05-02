@@ -6,6 +6,10 @@
 #include <errno.h>
 #include <stdio.h>
 
+enum secure_shm_return_values {
+    MAPPING_FAILURE = 1,
+    INVALID_ACCESS = -1
+};
 
 enum create_or_join 
 {

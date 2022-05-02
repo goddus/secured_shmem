@@ -1,19 +1,20 @@
 /*
- * free_list.c
+ * free_list.c: implementation of a free list (specific to secure shared memory regions)
  */
 
 #include "free_list.h"
 
 
 /*
- *  init: 
+ *  init: sets the next and previous pointers for the free and used list
+ *          and set the list size to 0
  */
 int initialize_list(struct controller *list_control, struct mem_region *arr){
     int i;
     list_control->used = NULL;
     list_control->free = arr;
 
-    //set next and previous pointers -- make this better later
+    //set next and previous pointers
     arr[0].prev = NULL;
     arr[0].next = &arr[1];
     for(i = 1; i < max_regions-1; i++){
@@ -26,11 +27,11 @@ int initialize_list(struct controller *list_control, struct mem_region *arr){
     //set size
     list_control->size = 0;
 
-    return 0;
+    return SUCCESS;
 }
 
 /*
- *  new_node: 
+ *  new_node: adds a node to the used list
  */
 struct mem_region *new_node(struct controller *list_control){
 
@@ -43,6 +44,9 @@ struct mem_region *new_node(struct controller *list_control){
     //adjust free list
     struct mem_region *new_region = list_control->free;
     list_control->free = new_region->next;
+
+    //TODO: memset the region before setting pointers
+
     if(new_region->next != NULL){
         new_region->next->prev = NULL;
     }
@@ -62,15 +66,16 @@ struct mem_region *new_node(struct controller *list_control){
 }
 
 /*
- *  return_to_free: <ASSUMES THAT THE POINTER PASSED IN IS THE EXACT POINTER>
- *      *we basically need to call search first and get the region before deleting*
+ *  return_to_free: delete the mem_region node (adds it to free list)
+ *       *ASSUMES THAT THE POINTER PASSED IN IS THE EXACT POINTER*
+ *       *need to call search first and get the region before deleting*
  */
 int return_to_free(struct controller *list_control, struct mem_region *node){
 
     //check node
     if(node == NULL){
         printf("Error: node does not exist in list\n");
-        return -1;
+        return REMOVE_NONEXISTENT_NODE_ERROR;
     }
    
     //adjust used list
@@ -103,11 +108,12 @@ int return_to_free(struct controller *list_control, struct mem_region *node){
 
     list_control->size--;
 
-    return 0;
+    return SUCCESS;
 }
 
 /*
- *  search: 
+ *  search: returns a pointer to the mem_region with the name provided
+ *          as a parameter
  */
 struct mem_region *search(struct controller *list_control, const char *name){
 
@@ -125,23 +131,25 @@ struct mem_region *search(struct controller *list_control, const char *name){
 }
 
 /*
- *  print_list:
+ *  print_list: prints the contents of the used list
+ *              *used for testing purposes*
  */
 void print_list(struct controller *list_control){
     
     //print used list
     struct mem_region *head;
+    int i;
     int count = 0;
     for(head = list_control->used; head != NULL; head=head->next){
         printf("node%d: %s\n", count, head->name);
         printf("fd: %d\n", head->fd);
         printf("size: %zu\n", head->size);
         printf("address: %p\n", head->address);
-	printf("users: ");
-	for(int i = 0; i < max_users; i++){
-		printf("%d ", head->users[i]);
-	}
-	printf("\n");
+	    printf("users: ");
+	    for(i = 0; i < max_users; i++){
+		    printf("%d ", head->users[i]);
+	    }
+	    printf("\n");
         printf("-------------------------------\n");
         count++;
     }

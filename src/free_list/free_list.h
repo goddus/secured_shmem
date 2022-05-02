@@ -13,6 +13,13 @@
 #define regions_list_name "/regions_list"
 #define regions_list_lock_name "/regions_lock"
 
+enum return_values {
+    SUCCESS,
+    REMOVE_NONEXISTENT_NODE_ERROR,
+    MEM_REGION_CREATION_ERROR,
+    UNLINKING_ERROR
+};
+
 struct controller {
     struct mem_region *used;
     struct mem_region *free;
@@ -26,8 +33,6 @@ struct mem_region {
     size_t size;
     int user_count;
     volatile int lock_state;
-    int next_in_queue;
-    int queue[max_users];
     int next_open_idx;
     pid_t users[max_users];
     struct mem_region *next;
