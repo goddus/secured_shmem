@@ -6,12 +6,14 @@ Secure Shared Memory is a library wrapping the POSIX shared memory interface tha
 
 1. Compile the library using `make` from the /testing folder (or a new folder in the same directory as the /src folder)
 
-2. Run init_list.c:
+2. Make sure ASLR is disabled
+
+3. Run init_list.c:
 ```C
 ./init_list
 ```
 
-3. In your C file:
+4. In your C file:
 ```C
 #include "secure_shmem.c"
 
