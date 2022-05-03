@@ -1,5 +1,4 @@
 #include "secure_shmem.h"
-#include "linked_list/mem_region_list.h"
 
 
 //modified test comment
