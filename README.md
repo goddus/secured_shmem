@@ -22,8 +22,6 @@ init();
 //any Secured Shared Memory functions
 ```
 
-<br />
-
 ## Functions
 
 ### Open or Join a Memory Region
