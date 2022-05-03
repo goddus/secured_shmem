@@ -15,7 +15,7 @@ Secure Shared Memory is a library wrapping the POSIX shared memory interface tha
 
 4. In your C file:
 ```C
-#include "secure_shmem.c"
+#include "secure_shmem.h"
 
 init();
 
