@@ -28,7 +28,7 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 
     //shm_open()
     int access_level = assemble_mode(access);
-    int shm_fd;
+    int shm_fd, i;
 
     //if user is creating region
     if (action == CREATE_REGION){
@@ -50,11 +50,14 @@ void *open_shared_mem (const char *name, enum create_or_join action, enum access
 
     //if user is joining region
     else if (action == JOIN_REGION){
+        
+        //TODO: remove this delay loop and instead provide functionality to optionally wait or to exit
+        for (i = 0; i < 1000000000; ++i){}
 
         //open region
         shm_fd = shm_open(name, access_level, S_IRWXU);
         if (shm_fd < 0){
-            printf("error creating a shared memory file descriptor\n");
+            printf("error joining a shared memory file descriptor\n");
             return NULL;
         }
     }
@@ -116,9 +119,6 @@ int read_shm(void *dest, void *src, size_t num_bytes, int access_num){
 }
 
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
-    printf("at the top of write_shm()\n");
-    printf("mem_region_shm->exec_count: %d\n", mem_region_shm->exec_count);
-    printf("access_num: %d\n", access_num);
     int try_again = 1;
     while(try_again == 1)
     {
@@ -126,7 +126,6 @@ int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
         //exec_count and writing stuff
         if (mem_region_shm->exec_count == access_num)
         {
-            printf("in the if statement in write_shm()\n");
             memcpy(dest, src, num_bytes);
             try_again = 0;
             mem_region_shm->exec_count = (mem_region_shm->exec_count+1);
@@ -137,19 +136,11 @@ int write_shm(void *dest, void *src, size_t num_bytes, int access_num){
 }
 void lock(volatile int* data)
 {
-    /*
-       int expected = UNLOCKED;
-       int desired = LOCKED;
-       while(!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-       {
-       expected = UNLOCKED;
-       }
-       */
     int ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
 
     if (ret_val >= 0)
     {
-        printf("locked successfully\n");
+        //printf("locked successfully\n");
         return;
     }
     else
@@ -160,34 +151,40 @@ void lock(volatile int* data)
             ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
         }
         ret_val = __atomic_sub_fetch(data, 1, __ATOMIC_ACQ_REL);
-        printf("locked successfully\n");
+        //printf("locked successfully\n");
         return;
     }
 }
 
 void unlock(volatile int* data)
 {
-    /*
-    int expected = LOCKED;
-    int desired = UNLOCKED;
-    if (!__atomic_compare_exchange(&mem_region_shm->lock_state, &expected, &desired, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
-    {
-        printf("ERROR with unlock\n");
-        return;
-    }
-    */
     int ret_val = __atomic_add_fetch(data, 1, __ATOMIC_ACQ_REL);
 
     if (ret_val == 1)
     {
-        printf("unlocked successfully\n");
+        //printf("unlocked successfully\n");
         return;
     }
     else
     {
         __atomic_store_n(data, 1, __ATOMIC_RELEASE);
-        printf("unlocked successfully\n");
+        //printf("unlocked successfully\n");
         syscall(SYS_futex, data, FUTEX_WAKE, INT_MAX);
         return;
     }
+}
+
+//TODO: get rid of this function eventually, it is only for testing our current leader_test and follower_test framework
+void print_test_array(int* test_array)
+{
+    int i;
+    for (i = 0; i < 10; ++i)
+    {
+        printf("element %d: %d\n", (i+1), test_array[i]);
+    }
+    for (i = 0; i < 200; ++i)
+    {
+        printf("-");
+    }
+    printf("\n");
 }

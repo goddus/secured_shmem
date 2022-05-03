@@ -12,8 +12,8 @@
 #include <sys/syscall.h>
 #include <limits.h>
 
-#define UNLOCKED 0
-#define LOCKED 1
+#define UNLOCKED 1
+#define LOCKED 0
 
 enum create_or_join 
 {
@@ -53,5 +53,6 @@ int read_shm(void *dest, void *src, size_t num_bytes, int access_num);
 int write_shm(void *dest, void *src, size_t num_bytes, int access_num);
 void lock(volatile int* data);
 void unlock(volatile int* data);
+void print_test_array(int* test_array);
 
 
