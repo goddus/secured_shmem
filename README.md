@@ -6,9 +6,9 @@ Secure Shared Memory is a library wrapping the POSIX shared memory interface tha
 
 1. Compile the library using `make` from the /testing folder (or a new folder in the same directory as the /src folder)
 
-2. Run init_cleanup.c:
+2. Run init_list.c:
 ```C
-./init_cleanup
+./init_list
 ```
 
 3. In your C file:
