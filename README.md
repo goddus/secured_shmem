@@ -22,20 +22,6 @@ init();
 //any Secured Shared Memory functions
 ```
 
-For the locking code:
-1. Compile using `make` from the /locking_code/testing folder
-
-2. In 1 terminal window run leader_test.c:
-```C
-./leader_test
-```
-
-3. In another terminal window run follower_test.c:
-```C
-./follower_test
-```
-
-
 ## Functions
 
 ### Open or Join a Memory Region
